@@ -1,25 +1,30 @@
 from login import login
-from checkplu import get_plu_number
+from checkplu import getPluNumber
 from session import *
+from pwinput import pwinput
+from requests import HTTPError, RequestException
 
-name = input("Podaj login: ")
-password = input("Podaj hasło: ")
+name = input('Podaj login: ')
+password = pwinput('Podaj hasło: ')
 
-token, user_id = login(name, password)
+try:
+    token, user_id = login(name, password)
 
-while True:
+    while True:
+        session_id = createNewSession(token, user_id, 20)
+        items = getExecutionItems(token, session_id)
+        startExecution(token, session_id)
 
-    session_id = create_new_session(token, user_id)
+        for item in items:
+            plu = getPluNumber(token, item[0])
+            sendAnswer(token, item[2], plu, item[1])
 
-    items = get_execution_items(token, session_id)
+        user_score, max_score = getResult(token, session_id, user_id)
+        print(f'Zakończono sesję. Wynik to {user_score}/{max_score} pkt.')
 
-    start_execution(token, session_id)
-
-    for item in items:
-        print(item)
-        plu = get_plu_number(token, item[0])
-        print(plu)
-        send_answer(token, item[2], plu, item[1])
-
-    result = get_result(token, session_id, user_id)
-    print(result)
+except RequestException as e:
+        print(f'Web request failed: {e}')
+except HTTPError as e:
+        print(f'HTTP error occurred: {e}')
+except ValueError as e:
+        print(f'JSON decoding failed: {e}')
