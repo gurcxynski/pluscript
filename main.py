@@ -1,6 +1,6 @@
 from login import login
 from checkplu import getPluNumber
-from session import *
+from session import SessionHandler
 from pwinput import pwinput
 from requests import HTTPError, RequestException
 
