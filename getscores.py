@@ -10,3 +10,18 @@ def getTotalScore(token) -> str:
 
 	data = response.json()
 	return data['data']
+
+def getScoresByCategory(token) -> tuple[str, str]:
+	url = 'https://easy-plu.knowledge-hero.com/api/plu/knowledge/user/product-groups-results'
+	
+	headers = { 'authorization': f'Bearer {token}' }
+
+	response = get(url, headers=headers)
+	response.raise_for_status()
+
+	scores = []
+	data = response.json()['data']['productCategories']
+	for i in range(4):
+		categoryData = data[i]
+		scores.append((categoryData['result'], categoryData['plu_product_category']['name']))
+	return scores

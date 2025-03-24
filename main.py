@@ -3,20 +3,27 @@ from requests import HTTPError, RequestException
 from session import SessionHandler
 from login import login
 from checkplu import getPluNumber
-from getscores import getTotalScore
+from getscores import getScoresByCategory, getTotalScore
+
+def printScores(token):
+	print(f'Wynik ogólny: {getTotalScore(token)}%\nWyniki w poszczególnych kategoriach:')
+	for score, category in getScoresByCategory(token):
+		print(f'{category}: {score}%')
 
 name = input('Podaj login: ')
 password = pwinput('Podaj hasło: ')
 
 try:
 	token, user_id = login(name, password)
-	print(f'Zalogowano jako {name}, obecny wynik to {getTotalScore(token)}%')
-
-	while getTotalScore(token) < 100:
+	print(f'Zalogowano jako {name}.')
+	printScores(token)
+	while True:
+	#while getTotalScore(token) < 100:
 		session = SessionHandler()
 		session.initializeSession(token, user_id, 20)
 		items = session.getExecutionItems()
-		session.startExecution()	
+		session.startExecution()
+		print(f'Rozpoczęto sesję. Wybrano {len(items)} produktów.')
 		for item in items:
 			plu = getPluNumber(token, item[0])
 			print(f'Dla {item[0]} znaleziono PLU {plu}')
@@ -24,7 +31,7 @@ try:
 
 		user_score, max_score = session.getResult()
 		print(f'Zakończono sesję. Wynik to {user_score}/{max_score} pkt.')
-		print(f'Aktualny wynik: {getTotalScore(token)}%')
+		printScores(token)
 
 except RequestException as e:
 	print(f'Web request failed: {e}')
