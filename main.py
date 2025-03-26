@@ -56,3 +56,4 @@ except ValueError as e:
 	print(f'JSON decoding failed: {e}')
 
 print('Osiągnięto maksymalny wynik!')
+input('Naciśnij dowolny klawisz, aby zakończyć...')
