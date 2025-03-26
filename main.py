@@ -10,15 +10,30 @@ def printScores(token):
 	for score, category in getScoresByCategory(token):
 		print(f'{category}: {score}%')
 
-name = input('Podaj login: ')
-password = pwinput('Podaj hasło: ')
+logged_in = False
 
-try:
-	token, user_id = login(name, password)
+while not logged_in:
+	name = input('Podaj login: ')
+	password = pwinput('Podaj hasło: ')
+	
+	try:
+		token, user_id = login(name, password)
+	except HTTPError as e:
+		print('Logowanie nie powiodło się. Spróbuj ponownie.')
+		continue
+	except ValueError as e:
+		print(f'JSON decoding failed: {e}')
+		continue
+	except RequestException as e:
+		print(f'Web request failed: {e}')
+		continue
+	
+	logged_in = True
 	print(f'Zalogowano jako {name}.')
 	printScores(token)
-	while True:
-	#while getTotalScore(token) < 100:
+
+try:
+	while getTotalScore(token) < 100:
 		session = SessionHandler()
 		session.initializeSession(token, user_id, 20)
 		items = session.getExecutionItems()
