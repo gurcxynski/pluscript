@@ -50,10 +50,10 @@ while getTotalScore(token) < 100:
 		print(f'Zakończono sesję. Wynik to {user_score}/{max_score} pkt.')
 		printScores(token)
 	except RequestException as e:
-		print(f'Web request failed: {e}')
 		if e.strerror == 'Connection aborted.':
 			token, user_id = login(name, password)
-		continue
+			continue
+		print(f'Web request failed: {e}')
 	except HTTPError as e:
 		print(f'HTTP error occurred: {e}')
 	except ValueError as e:
