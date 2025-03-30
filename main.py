@@ -1,8 +1,8 @@
 from pwinput import pwinput
 from requests import HTTPError, RequestException
 from session import SessionHandler
-from login import login
-from checkplu import getPluNumber
+from login import *
+from checkplu import *
 from getscores import getScoresByCategory, getTotalScore
 
 def printScores(token):
@@ -13,11 +13,14 @@ def printScores(token):
 logged_in = False
 
 while not logged_in:
-	name = input('Podaj login: ')
+	name = input('Podaj login lub email: ')
 	password = pwinput('Podaj hasło: ')
 	
 	try:
-		token, user_id = login(name, password)
+		if '@' in name:
+			token, user_id = login_with_email(name, password)
+		else:
+			token, user_id = login_with_username(name, password)
 	except HTTPError as e:
 		print('Logowanie nie powiodło się. Spróbuj ponownie.')
 		continue
