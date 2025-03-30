@@ -27,3 +27,9 @@ def login_with_email(email, password) -> tuple[str, str]:
 	data = response.json()
 
 	return data['api_token'], data['user']['id']
+
+def login(name, password) -> tuple[str, str]:
+	if '@' in name:
+		return login_with_email(name, password)
+	else:
+		return login_with_username(name, password)

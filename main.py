@@ -1,8 +1,8 @@
 from pwinput import pwinput
 from requests import HTTPError, RequestException
 from session import SessionHandler
-from login import *
-from checkplu import *
+from login import login
+from checkplu import getPluNumber
 from getscores import getScoresByCategory, getTotalScore
 
 def printScores(token):
@@ -17,10 +17,7 @@ while not logged_in:
 	password = pwinput('Podaj hasło: ')
 	
 	try:
-		if '@' in name:
-			token, user_id = login_with_email(name, password)
-		else:
-			token, user_id = login_with_username(name, password)
+		token, user_id = login(name, password)
 	except HTTPError as e:
 		print('Logowanie nie powiodło się. Spróbuj ponownie.')
 		continue
@@ -35,8 +32,10 @@ while not logged_in:
 	print(f'Zalogowano jako {name}.')
 	printScores(token)
 
-try:
-	while getTotalScore(token) < 100:
+
+
+while getTotalScore(token) < 100:
+	try:
 		session = SessionHandler()
 		session.initializeSession(token, user_id, 20)
 		items = session.getExecutionItems()
@@ -50,13 +49,15 @@ try:
 		user_score, max_score = session.getResult()
 		print(f'Zakończono sesję. Wynik to {user_score}/{max_score} pkt.')
 		printScores(token)
-
-except RequestException as e:
-	print(f'Web request failed: {e}')
-except HTTPError as e:
-	print(f'HTTP error occurred: {e}')
-except ValueError as e:
-	print(f'JSON decoding failed: {e}')
+	except RequestException as e:
+		print(f'Web request failed: {e}')
+		if e.strerror == 'Connection aborted.':
+			token, user_id = login(name, password)
+		continue
+	except HTTPError as e:
+		print(f'HTTP error occurred: {e}')
+	except ValueError as e:
+		print(f'JSON decoding failed: {e}')
 
 print('Osiągnięto maksymalny wynik!')
 input('Naciśnij Enter, aby zakończyć...')
