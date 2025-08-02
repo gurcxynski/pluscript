@@ -1,1 +1,0 @@
-SCHTASKS /create /XML "EasyPLU.xml" /TN "EasyPLU" /F

@@ -1,6 +1,10 @@
 from requests import post
 
+cache : dict = {}
+
 def getPluNumber(token, phrase) -> str:
+	if phrase in cache:
+		return cache[phrase]
 	url = 'https://easy-plu.knowledge-hero.com/api/plu/product/search'	
 	headers = { 'authorization': f'Bearer {token}' }	
 	payload = { 'search': phrase }
@@ -15,4 +19,5 @@ def getPluNumber(token, phrase) -> str:
 	
 	best = list[0]
 	plu = best['plu_number']	
+	cache[phrase] = plu
 	return plu

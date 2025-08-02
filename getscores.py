@@ -1,6 +1,6 @@
 from requests import get
 
-def getTotalScore(token) -> str:
+def getTotalScore(token) -> int:
 	url = 'https://easy-plu.knowledge-hero.com/api/plu/knowledge/user'
 	
 	headers = { 'authorization': f'Bearer {token}' }
@@ -11,7 +11,7 @@ def getTotalScore(token) -> str:
 	data = response.json()
 	return data['data']
 
-def getScoresByCategory(token) -> tuple[str, str]:
+def getScoresByCategory(token) -> list[tuple[str, str]]:
 	url = 'https://easy-plu.knowledge-hero.com/api/plu/knowledge/user/product-groups-results'
 	
 	headers = { 'authorization': f'Bearer {token}' }
