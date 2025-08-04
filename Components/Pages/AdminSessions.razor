@@ -9,73 +9,73 @@
 
 @if (storedCredentials.Any())
 {
-    <div class="table-responsive">
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Username</th>
-                    <th>Stored At</th>
-                    <th>Duration Stored</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var credentials in storedCredentials.OrderByDescending(s => s.StoredAt))
-                {
-                    <tr>
-                        <td>@credentials.Username</td>
-                        <td>@credentials.StoredAt.ToString("yyyy-MM-dd HH:mm:ss") UTC</td>
-                        <td>@GetDuration(credentials.StoredAt)</td>
-                        <td>
-                            <button class="btn btn-danger btn-sm" @onclick="() => RemoveCredentialsAsync(credentials.Username)">
-                                Remove
-                            </button>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+	<div class="table-responsive">
+		<table class="table table-striped">
+			<thead>
+				<tr>
+					<th>Username</th>
+					<th>Stored At</th>
+					<th>Duration Stored</th>
+					<th>Actions</th>
+				</tr>
+			</thead>
+			<tbody>
+				@foreach (var credentials in storedCredentials.OrderByDescending(s => s.StoredAt))
+				{
+					<tr>
+						<td>@credentials.Username</td>
+						<td>@credentials.StoredAt.ToString("yyyy-MM-dd HH:mm:ss") UTC</td>
+						<td>@GetDuration(credentials.StoredAt)</td>
+						<td>
+							<button class="btn btn-danger btn-sm" @onclick="() => RemoveCredentialsAsync(credentials.Username)">
+								Remove
+							</button>
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	</div>
 }
 else
 {
-    <div class="alert alert-info">
-        No stored user credentials found.
-    </div>
+	<div class="alert alert-info">
+		No stored user credentials found.
+	</div>
 }
 
 <button class="btn btn-primary" @onclick="RefreshCredentialsAsync">
-    <i class="bi bi-arrow-clockwise"></i> Refresh
+	<i class="bi bi-arrow-clockwise"></i> Refresh
 </button>
 
 @code {
-    private IEnumerable<StoredUserCredentials> storedCredentials = new List<StoredUserCredentials>();
+	private IEnumerable<StoredUserCredentials> storedCredentials = new List<StoredUserCredentials>();
 
-    protected override async Task OnInitializedAsync()
-    {
-        await RefreshCredentialsAsync();
-    }
+	protected override async Task OnInitializedAsync()
+	{
+		await RefreshCredentialsAsync();
+	}
 
-    private async Task RefreshCredentialsAsync()
-    {
-        storedCredentials = await UserCredentialsService.GetAllStoredCredentialsAsync();
-        StateHasChanged();
-    }
+	private async Task RefreshCredentialsAsync()
+	{
+		storedCredentials = await UserCredentialsService.GetAllStoredCredentialsAsync();
+		StateHasChanged();
+	}
 
-    private async Task RemoveCredentialsAsync(string username)
-    {
-        await UserCredentialsService.RemoveCredentialsAsync(username);
-        await RefreshCredentialsAsync();
-    }
+	private async Task RemoveCredentialsAsync(string username)
+	{
+		await UserCredentialsService.RemoveCredentialsAsync(username);
+		await RefreshCredentialsAsync();
+	}
 
-    private string GetDuration(DateTime storedAt)
-    {
-        var duration = DateTime.UtcNow - storedAt;
-        if (duration.TotalDays >= 1)
-            return $"{duration.Days}d {duration.Hours}h {duration.Minutes}m";
-        else if (duration.TotalHours >= 1)
-            return $"{duration.Hours}h {duration.Minutes}m";
-        else
-            return $"{duration.Minutes}m {duration.Seconds}s";
-    }
+	private string GetDuration(DateTime storedAt)
+	{
+		var duration = DateTime.UtcNow - storedAt;
+		if (duration.TotalDays >= 1)
+			return $"{duration.Days}d {duration.Hours}h {duration.Minutes}m";
+		else if (duration.TotalHours >= 1)
+			return $"{duration.Hours}h {duration.Minutes}m";
+		else
+			return $"{duration.Minutes}m {duration.Seconds}s";
+	}
 }

@@ -1,22 +1,18 @@
-using System.Collections.Generic;
-using System.Net.Http;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
-using System;
 
 namespace PluScript.Script;
 
-public class CheckPluFromPython
+public class PluRetriever
 {
-	private static readonly Dictionary<string, int> cache = new Dictionary<string, int>();
-	private static readonly HttpClient httpClient = new HttpClient();
+	private readonly Dictionary<string, int> cache = [];
+	private readonly HttpClient httpClient = new();
 
-	public static async Task<int> GetPluNumber(string token, string phrase)
+	public async Task<int> GetPluNumber(string token, string phrase)
 	{
-		if (cache.ContainsKey(phrase))
+		if (cache.TryGetValue(phrase, out int value))
 		{
-			return cache[phrase];
+			return value;
 		}
 
 		string url = "https://easy-plu.knowledge-hero.com/api/plu/product/search";

@@ -6,3 +6,6 @@ main.spec
 *.db
 *.db-shm
 *.db-wal
+.vs/
+.github/
+Properties/PublishProfiles

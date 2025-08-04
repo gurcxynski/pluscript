@@ -1,19 +1,15 @@
-using System;
-using System.Collections.Generic;
-using System.Net.Http;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace PluScript.Script;
 
-public class SessionHandler
+public class SessionHandler()
 {
-	private readonly HttpClient httpClient = new HttpClient();
-	private Dictionary<string, string> headers = new Dictionary<string, string>();
+	private readonly HttpClient httpClient = new();
 	private string token;
 	private int userId;
 	private string sessionId;
+	private readonly PluRetriever pluRetriever = new();
 
 	public async Task InitializeSession(string token, int userId, int itemCount)
 	{
@@ -148,25 +144,25 @@ public class SessionHandler
 
 		return (result, maxResult);
 	}
-	static async Task RunTests(string token, int userId)
+	public async Task RunTests(string token, int userId)
 	{
-		while (await GetScores.GetTotalScore(token) < 100)
+		do
 		{
-				var session = new SessionHandler();
-				await session.InitializeSession(token, userId, 20);
-				var items = await session.GetExecutionItems();
-				await session.StartExecution();
-				
-				Console.WriteLine($"Rozpoczęto sesję. Wybrano {items.Count} produktów.");
-				
-				foreach (var item in items)
-				{
-					var plu = await CheckPluFromPython.GetPluNumber(token, item.Title);
-					Console.WriteLine($"Dla {item.Title} znaleziono PLU {plu}");
-					await session.SendAnswer(item.ItemId, plu, item.Id);
-				}
-				var (userScore, maxScore) = await session.GetResult();
-				Console.WriteLine($"Zakończono sesję. Wynik to {userScore}/{maxScore} pkt.");
-		}
+			var session = new SessionHandler();
+			await session.InitializeSession(token, userId, 20);
+			var items = await session.GetExecutionItems();
+			await session.StartExecution();
+
+			Console.WriteLine($"Rozpoczęto sesję. Wybrano {items.Count} produktów.");
+
+			foreach (var item in items)
+			{
+				var plu = await pluRetriever.GetPluNumber(token, item.Title);
+				Console.WriteLine($"Dla {item.Title} znaleziono PLU {plu}");
+				await session.SendAnswer(item.ItemId, plu, item.Id);
+			}
+			var (userScore, maxScore) = await session.GetResult();
+			Console.WriteLine($"Zakończono sesję. Wynik to {userScore}/{maxScore} pkt.");
+		} while (await GetScores.GetTotalScore(token) < 100);
 	}
 }

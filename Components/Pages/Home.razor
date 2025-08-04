@@ -3,9 +3,8 @@
 @using PluScript
 @using PluScript.Services
 @using System.ComponentModel.DataAnnotations
-@inject AuthenticationService AuthService
 @inject NavigationManager Navigation
-
+@inject UserCredentialsService UserCredentialsService
 <PageTitle>Login - PluScript</PageTitle>
 
 <div class="row justify-content-center">
@@ -18,6 +17,15 @@
                 {
                     <div class="alert alert-danger" role="alert">
                         @errorMessage
+                    </div>
+                }
+
+                @if (showSuccessMessage)
+                {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Dane logowania zostały pomyślnie zapisane!
+                        <button type="button" class="btn-close" @onclick="HideSuccessMessage" aria-label="Close"></button>
                     </div>
                 }
                 
@@ -45,7 +53,7 @@
                         }
                         else
                         {
-                            <span>Zaloguj</span>
+                            <span>Zapisz dane</span>
                         }
                     </button>
                 </EditForm>
@@ -54,10 +62,45 @@
     </div>
 </div>
 
+<!-- Success Modal -->
+@if (showModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Sukces!
+                    </h5>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
+                    </div>
+                    <h6>Dane logowania zostały pomyślnie zapisane!</h6>
+                    <p class="text-muted mb-0">
+                        Użytkownik: <strong>@savedUsername</strong>
+                    </p>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-success" @onclick="CloseModal">
+                        <i class="fas fa-thumbs-up me-2"></i>
+                        OK
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private LoginModel loginModel = new();
     private string errorMessage = "";
     private bool isLogging = false;
+    private bool showSuccessMessage = false;
+    private bool showModal = false;
+    private string savedUsername = "";
 
     private async Task LoginAsync()
     {
@@ -65,15 +108,31 @@
         {
             isLogging = true;
             errorMessage = "";
+            showSuccessMessage = false;
             StateHasChanged();
 
-            var result = await PluScript.Login.LoginAsync(loginModel.Username, loginModel.Password);
+            var result = await PluScript.Script.Login.LoginAsync(loginModel.Username, loginModel.Password);
             
             if (!string.IsNullOrEmpty(result.Token))
             {
-                // Just store the credentials and mark as authenticated
-                await AuthService.LoginAsync(loginModel.Username, loginModel.Password);
-                Navigation.NavigateTo("/");
+                await UserCredentialsService.StoreCredentialsAsync(result.Username, loginModel.Password);
+                
+                // Show success confirmation
+                savedUsername = result.Username;
+                showModal = true;
+                showSuccessMessage = true;
+                
+                // Clear the form
+                loginModel = new LoginModel();
+                
+                StateHasChanged();
+                
+                // Auto-hide success message after 5 seconds
+                _ = Task.Delay(5000).ContinueWith(_ => 
+                {
+                    showSuccessMessage = false;
+                    InvokeAsync(StateHasChanged);
+                });
             }
             else
             {
@@ -90,6 +149,18 @@
             isLogging = false;
             StateHasChanged();
         }
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+        StateHasChanged();
+    }
+
+    private void HideSuccessMessage()
+    {
+        showSuccessMessage = false;
+        StateHasChanged();
     }
 
     public class LoginModel

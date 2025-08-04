@@ -9,39 +9,39 @@ using PluScript.Data;
 
 namespace PluScript.Migrations
 {
-    [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
-    {
-        protected override void BuildModel(ModelBuilder modelBuilder)
-        {
+	[DbContext(typeof(ApplicationDbContext))]
+	partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+	{
+		protected override void BuildModel(ModelBuilder modelBuilder)
+		{
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.7");
+			modelBuilder.HasAnnotation("ProductVersion", "9.0.7");
 
-            modelBuilder.Entity("PluScript.Data.UserCredential", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+			modelBuilder.Entity("PluScript.Data.UserCredential", b =>
+				{
+					b.Property<int>("Id")
+						.ValueGeneratedOnAdd()
+						.HasColumnType("INTEGER");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+					b.Property<DateTime>("CreatedAt")
+						.HasColumnType("TEXT");
 
-                    b.Property<string>("Password")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
+					b.Property<string>("Password")
+						.IsRequired()
+						.HasColumnType("TEXT");
 
-                    b.Property<string>("Username")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
+					b.Property<string>("Username")
+						.IsRequired()
+						.HasColumnType("TEXT");
 
-                    b.HasKey("Id");
+					b.HasKey("Id");
 
-                    b.HasIndex("Username")
-                        .IsUnique();
+					b.HasIndex("Username")
+						.IsUnique();
 
-                    b.ToTable("UserCredentials");
-                });
+					b.ToTable("UserCredentials");
+				});
 #pragma warning restore 612, 618
-        }
-    }
+		}
+	}
 }
