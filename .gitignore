@@ -1,5 +1,8 @@
-__pycache__/
 build/
 dist/
+bin/
+obj/
 main.spec
-profiles.txt
+*.db
+*.db-shm
+*.db-wal

@@ -1,0 +1,103 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@using PluScript
+@using PluScript.Services
+@using System.ComponentModel.DataAnnotations
+@inject AuthenticationService AuthService
+@inject NavigationManager Navigation
+
+<PageTitle>Login - PluScript</PageTitle>
+
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card">
+            <div class="card-body">
+                <h3 class="card-title text-center mb-4">Podaj dane logowania do EasyPLU</h3>
+                
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-danger" role="alert">
+                        @errorMessage
+                    </div>
+                }
+                
+                <EditForm Model="@loginModel" OnValidSubmit="@LoginAsync">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" />
+                    
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Login lub Email</label>
+                        <InputText id="username" class="form-control" @bind-Value="loginModel.Username" placeholder="Podaj login lub email" />
+                        <ValidationMessage For="@(() => loginModel.Username)" />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Hasło</label>
+                        <InputText id="password" type="password" class="form-control" @bind-Value="loginModel.Password" placeholder="Podaj hasło" />
+                        <ValidationMessage For="@(() => loginModel.Password)" />
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100" disabled="@isLogging">
+                        @if (isLogging)
+                        {
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            <span>Logowanie...</span>
+                        }
+                        else
+                        {
+                            <span>Zaloguj</span>
+                        }
+                    </button>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginModel loginModel = new();
+    private string errorMessage = "";
+    private bool isLogging = false;
+
+    private async Task LoginAsync()
+    {
+        try
+        {
+            isLogging = true;
+            errorMessage = "";
+            StateHasChanged();
+
+            var result = await PluScript.Login.LoginAsync(loginModel.Username, loginModel.Password);
+            
+            if (!string.IsNullOrEmpty(result.Token))
+            {
+                // Just store the credentials and mark as authenticated
+                await AuthService.LoginAsync(loginModel.Username, loginModel.Password);
+                Navigation.NavigateTo("/");
+            }
+            else
+            {
+                errorMessage = "Nieprawidłowe dane logowania.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Wystąpił błąd podczas logowania. Spróbuj ponownie.";
+            Console.WriteLine($"Login error: {ex.Message}");
+        }
+        finally
+        {
+            isLogging = false;
+            StateHasChanged();
+        }
+    }
+
+    public class LoginModel
+    {
+        [Required(ErrorMessage = "Login lub email jest wymagany.")]
+        public string Username { get; set; } = "";
+
+        [Required(ErrorMessage = "Hasło jest wymagane.")]
+        public string Password { get; set; } = "";
+    }
+}
