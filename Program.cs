@@ -11,7 +11,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddServerSideBlazor();
 
 builder.Services.AddScoped<UserCredentialsService>();
-builder.Services.AddScoped<AuthenticationService>();
+builder.Services.AddScoped<UserCredentialsService>();
 builder.Services.AddHostedService<PeriodicTaskService>();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
