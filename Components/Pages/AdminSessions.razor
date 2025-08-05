@@ -5,6 +5,7 @@
 @inject UserCredentialsService UserCredentialsService
 @inject LoggingService LoggingService
 @inject AuthService AuthService
+@inject IServiceScopeFactory ServiceScopeFactory
 @implements IDisposable
 
 @if (AuthService.IsAuthenticated)
@@ -90,6 +91,14 @@
             }
         </div>
     </div>
+
+	<div class="card mt-3">
+		<div class="card-body">
+			<button class="btn btn-primary" @onclick="() => UserSessions.ExecuteTaskForAllUsers(ServiceScopeFactory, true)">
+        		<i class="bi bi-arrow-clockwise"></i> Run tests for all users
+    		</button>
+		</div>
+	</div>
 }
 else
 {
@@ -99,71 +108,98 @@ else
 }
 
 @code {
-	private IEnumerable<StoredUserCredentials> storedCredentials = new List<StoredUserCredentials>();
-	private IEnumerable<LogEntry> logs = new List<LogEntry>();
-	private Timer? _refreshTimer;
+    private IEnumerable<StoredUserCredentials> storedCredentials = new List<StoredUserCredentials>();
+    private IEnumerable<LogEntry> logs = new List<LogEntry>();
+    private Timer? _refreshTimer;
 
-	protected override async Task OnInitializedAsync()
-	{
-		AuthService.OnAuthStateChanged += StateHasChanged;
-		
-		if (AuthService.IsAuthenticated)
-		{
-			await RefreshCredentialsAsync();
-			RefreshLogs();
-			
-			// Auto-refresh logs every 5 seconds
-			_refreshTimer = new Timer(async _ => await InvokeAsync(() => {
-				RefreshLogs();
-				StateHasChanged();
-			}), null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
-		}
-	}
+    protected override async Task OnInitializedAsync()
+    {
+        AuthService.OnAuthStateChanged += OnAuthStateChangedAsync;
+        
+        if (AuthService.IsAuthenticated)
+        {
+            await LoadDataAsync();
+        }
+    }
 
-	private async Task RefreshCredentialsAsync()
-	{
-		storedCredentials = await UserCredentialsService.GetAllStoredCredentialsAsync();
-		StateHasChanged();
-	}
+    private async void OnAuthStateChangedAsync()
+    {
+        if (AuthService.IsAuthenticated)
+        {
+            await LoadDataAsync();
+            StartAutoRefresh();
+        }
+        else
+        {
+            StopAutoRefresh();
+        }
+        StateHasChanged();
+    }
 
-	private async Task RemoveCredentialsAsync(string username)
-	{
-		await UserCredentialsService.RemoveCredentialsAsync(username);
-		await RefreshCredentialsAsync();
-	}
+    private async Task LoadDataAsync()
+    {
+        await RefreshCredentialsAsync();
+        RefreshLogs();
+    }
 
-	private string GetDuration(DateTime storedAt)
-	{
-		var duration = DateTime.UtcNow - storedAt;
-		if (duration.TotalDays >= 1)
-			return $"{duration.Days}d {duration.Hours}h {duration.Minutes}m";
-		else if (duration.TotalHours >= 1)
-			return $"{duration.Hours}h {duration.Minutes}m";
-		else
-			return $"{duration.Minutes}m {duration.Seconds}s";
-	}
+    private void StartAutoRefresh()
+    {
+        StopAutoRefresh();
+        _refreshTimer = new Timer(async _ => await InvokeAsync(() => {
+            RefreshLogs();
+            StateHasChanged();
+        }), null, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2));
+    }
 
-	private void RefreshLogs()
-	{
-		logs = LoggingService.GetLogs();
-	}
+    private void StopAutoRefresh()
+    {
+        _refreshTimer?.Dispose();
+        _refreshTimer = null;
+    }
 
-	private void ClearLogs()
-	{
-		LoggingService.ClearLogs();
-		RefreshLogs();
-	}
+    private async Task RefreshCredentialsAsync()
+    {
+        storedCredentials = await UserCredentialsService.GetAllStoredCredentialsAsync();
+        StateHasChanged();
+    }
 
-	private void Logout()
-	{
-		AuthService.Logout();
-		_refreshTimer?.Dispose();
-		_refreshTimer = null;
-	}
+    private async Task RemoveCredentialsAsync(string username)
+    {
+        await UserCredentialsService.RemoveCredentialsAsync(username);
+        await RefreshCredentialsAsync();
+    }
 
-	public void Dispose()
-	{
-		_refreshTimer?.Dispose();
-		AuthService.OnAuthStateChanged -= StateHasChanged;
-	}
+    private string GetDuration(DateTime storedAt)
+    {
+        var duration = DateTime.UtcNow - storedAt;
+        if (duration.TotalDays >= 1)
+            return $"{duration.Days}d {duration.Hours}h {duration.Minutes}m";
+        else if (duration.TotalHours >= 1)
+            return $"{duration.Hours}h {duration.Minutes}m";
+        else
+            return $"{duration.Minutes}m {duration.Seconds}s";
+    }
+
+    private void RefreshLogs()
+    {
+        logs = LoggingService.GetLogs();
+    }
+
+    private void ClearLogs()
+    {
+        LoggingService.ClearLogs();
+        RefreshLogs();
+    }
+
+    private void Logout()
+    {
+        AuthService.Logout();
+        StopAutoRefresh();
+    }
+
+    public void Dispose()
+    {
+        StopAutoRefresh();
+        AuthService.OnAuthStateChanged -= OnAuthStateChangedAsync;
+    }
 }

@@ -15,8 +15,6 @@ public class AuthService
     
     public bool Login(string password)
     {
-		Console.WriteLine($"Attempting login with password: {password}");
-		Console.WriteLine($"Actual admin password: {_adminPassword}");
         if (password == _adminPassword)
         {
             IsAuthenticated = true;
