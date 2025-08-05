@@ -1,0 +1,44 @@
+@using PluScript.Services
+@inject AuthService AuthService
+
+<div class="card mx-auto" style="max-width: 400px;">
+    <div class="card-header">
+        <h4 class="mb-0">Admin Login</h4>
+    </div>
+    <div class="card-body">
+        <EditForm Model="loginModel" OnValidSubmit="HandleLogin">
+            <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <InputText id="password" type="password" class="form-control" @bind-Value="loginModel.Password" />
+            </div>
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger">@errorMessage</div>
+            }
+            <button type="submit" class="btn btn-primary w-100">Login</button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private LoginModel loginModel = new();
+    private string errorMessage = string.Empty;
+
+    private void HandleLogin()
+    {
+        if (AuthService.Login(loginModel.Password))
+        {
+            errorMessage = string.Empty;
+        }
+        else
+        {
+            errorMessage = "Invalid password";
+        }
+        loginModel.Password = string.Empty;
+    }
+
+    public class LoginModel
+    {
+        public string Password { get; set; } = string.Empty;
+    }
+}

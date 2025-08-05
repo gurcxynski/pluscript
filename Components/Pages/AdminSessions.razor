@@ -1,59 +1,123 @@
 @page "/admin/credentials"
 @rendermode InteractiveServer
 @using PluScript.Services
+@using PluScript.Components.Auth
 @inject UserCredentialsService UserCredentialsService
+@inject LoggingService LoggingService
+@inject AuthService AuthService
+@implements IDisposable
 
-<h3>Stored User Credentials</h3>
-
-<p>Total stored users: <strong>@storedCredentials.Count()</strong></p>
-
-@if (storedCredentials.Any())
+@if (AuthService.IsAuthenticated)
 {
-	<div class="table-responsive">
-		<table class="table table-striped">
-			<thead>
-				<tr>
-					<th>Username</th>
-					<th>Stored At</th>
-					<th>Duration Stored</th>
-					<th>Actions</th>
-				</tr>
-			</thead>
-			<tbody>
-				@foreach (var credentials in storedCredentials.OrderByDescending(s => s.StoredAt))
-				{
-					<tr>
-						<td>@credentials.Username</td>
-						<td>@credentials.StoredAt.ToString("yyyy-MM-dd HH:mm:ss") UTC</td>
-						<td>@GetDuration(credentials.StoredAt)</td>
-						<td>
-							<button class="btn btn-danger btn-sm" @onclick="() => RemoveCredentialsAsync(credentials.Username)">
-								Remove
-							</button>
-						</td>
-					</tr>
-				}
-			</tbody>
-		</table>
-	</div>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Stored User Credentials</h3>
+        <button class="btn btn-outline-danger btn-sm" @onclick="Logout">
+            <i class="bi bi-box-arrow-right"></i> Logout
+        </button>
+    </div>
+
+    <p>Total stored users: <strong>@storedCredentials.Count()</strong></p>
+
+    @if (storedCredentials.Any())
+    {
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Stored At</th>
+                        <th>Duration Stored</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var credentials in storedCredentials.OrderByDescending(s => s.StoredAt))
+                    {
+                        <tr>
+                            <td>@credentials.Username</td>
+                            <td>@credentials.StoredAt.ToString("yyyy-MM-dd HH:mm:ss") UTC</td>
+                            <td>@GetDuration(credentials.StoredAt)</td>
+                            <td>
+                                <button class="btn btn-danger btn-sm" @onclick="() => RemoveCredentialsAsync(credentials.Username)">
+                                    Remove
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            No stored user credentials found.
+        </div>
+    }
+
+    <button class="btn btn-primary" @onclick="RefreshCredentialsAsync">
+        <i class="bi bi-arrow-clockwise"></i> Refresh
+    </button>
+
+    <hr />
+
+    <h4>Periodic Task Logs</h4>
+    <div class="d-flex gap-2 mb-3">
+        <button class="btn btn-secondary btn-sm" @onclick="RefreshLogs">
+            <i class="bi bi-arrow-clockwise"></i> Refresh Logs
+        </button>
+        <button class="btn btn-warning btn-sm" @onclick="ClearLogs">
+            <i class="bi bi-trash"></i> Clear Logs
+        </button>
+    </div>
+
+    <div class="card">
+        <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+            @if (logs.Any())
+            {
+                @foreach (var log in logs.Take(50))
+                {
+                    <div class="mb-1">
+                        <small class="text-muted">[@log.Timestamp.ToString("HH:mm:ss")]</small>
+                        <span class="badge bg-secondary">@log.Category</span>
+                        <span>@log.Message</span>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="text-muted">No logs available.</div>
+            }
+        </div>
+    </div>
 }
 else
 {
-	<div class="alert alert-info">
-		No stored user credentials found.
-	</div>
+    <div class="container mt-5">
+        <LoginForm />
+    </div>
 }
-
-<button class="btn btn-primary" @onclick="RefreshCredentialsAsync">
-	<i class="bi bi-arrow-clockwise"></i> Refresh
-</button>
 
 @code {
 	private IEnumerable<StoredUserCredentials> storedCredentials = new List<StoredUserCredentials>();
+	private IEnumerable<LogEntry> logs = new List<LogEntry>();
+	private Timer? _refreshTimer;
 
 	protected override async Task OnInitializedAsync()
 	{
-		await RefreshCredentialsAsync();
+		AuthService.OnAuthStateChanged += StateHasChanged;
+		
+		if (AuthService.IsAuthenticated)
+		{
+			await RefreshCredentialsAsync();
+			RefreshLogs();
+			
+			// Auto-refresh logs every 5 seconds
+			_refreshTimer = new Timer(async _ => await InvokeAsync(() => {
+				RefreshLogs();
+				StateHasChanged();
+			}), null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
+		}
 	}
 
 	private async Task RefreshCredentialsAsync()
@@ -77,5 +141,29 @@ else
 			return $"{duration.Hours}h {duration.Minutes}m";
 		else
 			return $"{duration.Minutes}m {duration.Seconds}s";
+	}
+
+	private void RefreshLogs()
+	{
+		logs = LoggingService.GetLogs();
+	}
+
+	private void ClearLogs()
+	{
+		LoggingService.ClearLogs();
+		RefreshLogs();
+	}
+
+	private void Logout()
+	{
+		AuthService.Logout();
+		_refreshTimer?.Dispose();
+		_refreshTimer = null;
+	}
+
+	public void Dispose()
+	{
+		_refreshTimer?.Dispose();
+		AuthService.OnAuthStateChanged -= StateHasChanged;
 	}
 }

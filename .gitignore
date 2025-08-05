@@ -9,3 +9,4 @@ main.spec
 .vs/
 .github/
 Properties/PublishProfiles
+*.env

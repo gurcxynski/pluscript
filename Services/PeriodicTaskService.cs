@@ -5,7 +5,7 @@ namespace PluScript.Services;
 public class PeriodicTaskService(IServiceScopeFactory serviceScopeFactory) : BackgroundService
 {
 	private readonly IServiceScopeFactory _serviceScopeFactory = serviceScopeFactory;
-	private readonly TimeSpan _period = TimeSpan.FromMinutes(1);
+	private readonly TimeSpan _period = TimeSpan.FromHours(1);
 
 	protected override async Task ExecuteAsync(CancellationToken stoppingToken)
 	{
@@ -20,26 +20,32 @@ public class PeriodicTaskService(IServiceScopeFactory serviceScopeFactory) : Bac
 	{
 		using var scope = _serviceScopeFactory.CreateScope();
 		var userCredentialsService = scope.ServiceProvider.GetRequiredService<UserCredentialsService>();
+		var loggingService = scope.ServiceProvider.GetRequiredService<LoggingService>();
 
 		var storedCredentials = await userCredentialsService.GetAllStoredCredentialsAsync();
 
 		foreach (var credentials in storedCredentials)
 		{
-			RunTestsIfNeeded(credentials);
+			await RunTestsIfNeeded(credentials, loggingService);
 		}
 	}
-	private static async Task RunTestsIfNeeded(StoredUserCredentials credentials)
+	
+	private static async Task RunTestsIfNeeded(StoredUserCredentials credentials, LoggingService loggingService)
 	{
 		var (token, userId, username) = await Login.LoginAsync(credentials.Username, credentials.Password);
-		Console.WriteLine($"Checking scores for user: {username} (ID: {userId}) with token: {token}");
-		if (GetScores.GetTotalScore(token).GetAwaiter().GetResult() == 100) return;
-		RunTestSession(token, userId, username);
+		loggingService.Log($"Checking scores for user: {username} (ID: {userId})", "PeriodicTask");
+		if (GetScores.GetTotalScore(token).GetAwaiter().GetResult() == 100) {
+			loggingService.Log($"User {username} (ID: {userId}) already has full score, skipping tests.", "PeriodicTask");
+			return;
+		}
+		await RunTestSession(token, userId, username, loggingService);
 	}
-	private static async Task RunTestSession(string token, int userId, string username)
+	
+	private static async Task RunTestSession(string token, int userId, string username, LoggingService loggingService)
 	{
-		Console.WriteLine($"Running test session for user: {username} (ID: {userId}) with token: {token}");
+		loggingService.Log($"Running test session for user: {username} (ID: {userId})", "PeriodicTask");
 		SessionHandler sessionHandler = new();
-		sessionHandler.RunTests(token, userId).GetAwaiter().GetResult();
-		Console.WriteLine($"Test session completed for user: {username} (ID: {userId})");
+		await Task.Run(() => sessionHandler.RunTests(token, userId).GetAwaiter().GetResult());
+		loggingService.Log($"Test session completed for user: {username} (ID: {userId})", "PeriodicTask");
 	}
 }
